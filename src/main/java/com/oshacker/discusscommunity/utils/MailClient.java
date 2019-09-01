@@ -16,7 +16,7 @@ import java.util.Map;
 
 @Component
 public class MailClient {
-    private static final Logger logger = LoggerFactory.getLogger(MailSender.class);
+    private static final Logger logger = LoggerFactory.getLogger(MailClient.class);
 
     @Autowired
     private JavaMailSender javaMailSender;
