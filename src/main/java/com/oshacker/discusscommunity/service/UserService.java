@@ -2,6 +2,7 @@ package com.oshacker.discusscommunity.service;
 
 import com.oshacker.discusscommunity.dao.UserMapper;
 import com.oshacker.discusscommunity.entity.User;
+import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
 import com.oshacker.discusscommunity.utils.MailClient;
 import org.apache.commons.lang3.StringUtils;
@@ -14,7 +15,7 @@ import org.thymeleaf.context.Context;
 import java.util.*;
 
 @Service
-public class UserService {
+public class UserService implements DiscussCommunityConstant {
 
     @Autowired
     private UserMapper userMapper;
@@ -30,6 +31,18 @@ public class UserService {
 
     @Autowired
     private MailClient mailClient;
+
+    public int activation(int userId, String code) {
+        User user = userMapper.selectById(userId);
+        if (user.getStatus() == 1) {
+            return ACTIVATION_REPEAT;
+        } else if (user.getActivationCode().equals(code)) {
+            userMapper.updateStatus(userId, 1);
+            return ACTIVATION_SUCCESS;
+        } else {
+            return ACTIVATION_FAILURE;
+        }
+    }
 
     public Map<String,Object> register(User user) {
         Map<String,Object> map=new HashMap<>();
