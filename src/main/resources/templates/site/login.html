@@ -91,8 +91,8 @@
 							</div>
 						</div>
 						<div class="col-sm-4">
-							<img th:src="@{/img/captcha.png}" style="width:100px;height:40px;" class="mr-2"/>
-							<a href="javascript:;" class="font-size-12 align-bottom">刷新验证码</a>
+							<img th:src="@{/kaptcha}" id="kaptcha" style="width:100px;height:40px;" class="mr-2"/>
+							<a href="javascript:refresh_kaptcha();" class="font-size-12 align-bottom">刷新验证码</a>
 						</div>
 					</div>				
 					<div class="form-group row mt-4">
@@ -179,5 +179,17 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" crossorigin="anonymous"></script>
 	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" crossorigin="anonymous"></script>
 	<script th:src="@{/js/global.js}"></script>
+	<!--JQuery-->
+	<script>
+		function refresh_kaptcha() {
+		    // 其实只要再次访问/community/kaptcha就可以刷新验证码，
+			// 但是有的浏览器比较智能，发现你重新访问服务器要获取的是图片（静态资源），
+			// 而且访问路径又没变，那么它认为没什么变化，就偷懒不去访问。
+			// 这里通过变化的p参数善意的欺骗浏览器，让它误以为路径变了。
+			var path=CONTEXT_PATH+"/kaptcha?p="+Math.random();
+			// 将id="kaptcha"的src属性的值改为path
+			$("#kaptcha").attr("src",path);
+        }
+	</script>
 </body>
 </html>
