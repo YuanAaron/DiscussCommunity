@@ -4,16 +4,20 @@ import com.google.code.kaptcha.Producer;
 import com.oshacker.discusscommunity.entity.User;
 import com.oshacker.discusscommunity.service.UserService;
 import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.imageio.ImageIO;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.awt.image.BufferedImage;
@@ -32,6 +36,45 @@ public class LoginController implements DiscussCommunityConstant {
     @Autowired
     private Producer kaptchaProducer;
 
+    @Value("${server.servlet.context-path}")
+    private String contextPath;
+
+    @RequestMapping(path = {"/logout"},method= RequestMethod.GET)
+    public String login(@CookieValue("ticket") String ticket) {
+        userService.logout(ticket);
+        return "redirect:/login"; //默认重定向到GET请求的/login
+    }
+
+    //对于普通参数，spring MVC不会将其加入到model中，而对于类似User对象则会。
+    //方法一：手动将这些普通参数加入model中；
+    //方法二：从request对象中通过request.getParameter()获取
+    @RequestMapping(path = {"/login"},method= RequestMethod.POST)
+    public String login(String username, String password, String code, boolean rememberme,
+                        Model model, HttpSession session, HttpServletResponse response) {
+        //先检查验证码
+        String kaptcha = (String) session.getAttribute("kaptcha");
+        if (StringUtils.isBlank(kaptcha) || StringUtils.isBlank(kaptcha) || !kaptcha.equalsIgnoreCase(code)) {
+            model.addAttribute("codeMsg","验证码不正确!");
+            return "/site/login";
+        }
+
+        //检查账号、密码
+        int expiredSeconds=rememberme?REMEMBERME_EXPIRED_SECONDS:DEFAULT_EXPIRED_SECONDS;
+        Map<String, Object> map = userService.login(username, password, expiredSeconds);
+        if (map.containsKey("ticket")) {
+            //向浏览器下发ticket
+            Cookie cookie=new Cookie("ticket",map.get("ticket").toString());
+            cookie.setPath(contextPath);
+            cookie.setMaxAge(expiredSeconds);
+            response.addCookie(cookie);
+            return "redirect:/index";
+        }else {
+            model.addAttribute("usernameMsg",map.get("usernameMsg"));
+            model.addAttribute("passwordMsg",map.get("passwordMsg"));
+            return "/site/login";
+        }
+    }
+
     //生成验证码
     @RequestMapping(path = "/kaptcha", method = RequestMethod.GET)
     public void getKaptcha(HttpServletResponse response, HttpSession session) {
@@ -39,7 +82,7 @@ public class LoginController implements DiscussCommunityConstant {
         String text = kaptchaProducer.createText();
         BufferedImage image = kaptchaProducer.createImage(text);
 
-        // 将验证码存入session
+        // 将验证码存入session用于登录
         session.setAttribute("kaptcha", text);
 
         // 将图片输出给浏览器

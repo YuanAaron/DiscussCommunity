@@ -1,6 +1,8 @@
 package com.oshacker.discusscommunity.service;
 
+import com.oshacker.discusscommunity.dao.LoginTicketMapper;
 import com.oshacker.discusscommunity.dao.UserMapper;
+import com.oshacker.discusscommunity.entity.LoginTicket;
 import com.oshacker.discusscommunity.entity.User;
 import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
@@ -31,6 +33,61 @@ public class UserService implements DiscussCommunityConstant {
 
     @Autowired
     private MailClient mailClient;
+
+    @Autowired
+    private LoginTicketMapper loginTicketMapper;
+
+    public void logout(String ticket) {
+        loginTicketMapper.updateStatus(ticket,1);
+    }
+
+    public Map<String,Object> login(String username,String password,long expiredSeconds) {
+        Map<String,Object> map=new HashMap<>();
+
+        //空值判断
+        if (StringUtils.isBlank(username)) {
+            map.put("usernameMsg","账号不能为空!");
+            return map;
+        }
+
+        if (StringUtils.isBlank(password)) {
+            map.put("passwordMsg","密码不能为空!");
+            return map;
+        }
+
+        //检验账号是否存在
+        User user = userMapper.selectByName(username);
+        if (user==null) {
+            map.put("usernameMsg","该账号不存在!");
+            return map;
+        }
+
+        //检验账号是否激活
+        if (user.getStatus()==0) {
+            map.put("usernameMsg","该账号未激活!");
+            return map;
+        }
+
+        //用户名存在且已激活，检验密码是否正确
+        password=DiscussCommunityUtil.md5(password+user.getSalt());
+        if (!user.getPassword().equals(password)) {
+            map.put("passwordMsg","密码不正确!");
+            return map;
+        }
+
+        //用户名存在且已激活，密码正确，即登录成功
+
+        //登录成功后生成登录凭证
+        LoginTicket loginTicket=new LoginTicket();
+        loginTicket.setUserId(user.getId());
+        loginTicket.setExpired(new Date(System.currentTimeMillis()+expiredSeconds*1000));
+        loginTicket.setStatus(0);
+        loginTicket.setTicket(DiscussCommunityUtil.generateUUID());
+        loginTicketMapper.insertLoginTicket(loginTicket);
+
+        map.put("ticket",loginTicket.getTicket());
+        return map;
+    }
 
     public int activation(int userId, String code) {
         User user = userMapper.selectById(userId);
@@ -100,10 +157,6 @@ public class UserService implements DiscussCommunityConstant {
         context.setVariable("url",url);
         String content = templateEngine.process("/mail/activation", context);
         mailClient.sendEmail(user.getEmail(),"账号激活",content);
-
-        //注册成功，自动登录，同样后台生成ticket
-//        String ticket=addLoginTicket(user.getId());//t票和用户关联
-//        map.put("ticket",ticket);
         return map;
     }
 
