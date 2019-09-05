@@ -1,5 +1,6 @@
 package com.oshacker.discusscommunity.controller;
 
+import com.oshacker.discusscommunity.annotation.LoginRequired;
 import com.oshacker.discusscommunity.entity.User;
 import com.oshacker.discusscommunity.service.UserService;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
@@ -65,6 +66,7 @@ public class UserController {
         }
     }
 
+    @LoginRequired
     //当传入多张图片时，使用MultipartFile[]
     @RequestMapping(path = "/upload", method = RequestMethod.POST)
     public String uploadHeader(MultipartFile headerImage, Model model) {
@@ -101,6 +103,7 @@ public class UserController {
         return "redirect:/index";
     }
 
+    @LoginRequired
     @RequestMapping(path = "/setting", method = RequestMethod.GET)
     public String getSettingPage() {
         return "/site/setting";
