@@ -37,6 +37,10 @@ public class UserService implements DiscussCommunityConstant {
     @Autowired
     private LoginTicketMapper loginTicketMapper;
 
+    public LoginTicket findLoginTicket(String ticket) {
+        return loginTicketMapper.selectByTicket(ticket);
+    }
+
     public void logout(String ticket) {
         loginTicketMapper.updateStatus(ticket,1);
     }
