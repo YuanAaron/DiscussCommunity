@@ -25,6 +25,7 @@ public class LoginRequiredIntercepter implements HandlerInterceptor {
             //检验该方法是否标识有@LoginRequired
             LoginRequired loginRequired = method.getAnnotation(LoginRequired.class);
             if (loginRequired!=null && hostHolder.getUser()==null) {
+                //request.getContextPath()也可以换成@Value("${server.servlet.context-path}")的方式
                 response.sendRedirect(request.getContextPath()+"/login");
                 return false;
             }
