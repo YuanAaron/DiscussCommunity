@@ -37,6 +37,32 @@ public class UserService implements DiscussCommunityConstant {
     @Autowired
     private LoginTicketMapper loginTicketMapper;
 
+    public Map<String, Object> updatePassword(int userId, String oldPassword, String newPassword) {
+        Map<String,Object> map=new HashMap<>();
+        
+        // 空值处理
+        if (StringUtils.isBlank(oldPassword)) {
+            map.put("oldPasswordMsg", "原密码不能为空!");
+            return map;
+        }
+        if (StringUtils.isBlank(newPassword)) {
+            map.put("newPasswordMsg", "新密码不能为空!");
+            return map;
+        }
+        
+        //验证原始密码
+        User user = userMapper.selectById(userId);
+        oldPassword=DiscussCommunityUtil.md5(oldPassword+user.getSalt());
+        if (!oldPassword.equals(user.getPassword())) {
+            map.put("oldPasswordMsg","原密码不正确!");
+            return map;
+        }
+
+        newPassword=DiscussCommunityUtil.md5(newPassword+user.getSalt());
+        userMapper.updatePassword(userId,newPassword);
+        return map;
+    }
+
     public Map<String,Object> resetPassword(String email,String newPassword) {
         Map<String,Object> map=new HashMap<>();
         

@@ -46,6 +46,7 @@ public class LoginController implements DiscussCommunityConstant {
     @Autowired
     private MailClient mailClient;
 
+    //重置密码
     @RequestMapping(path = {"/forget/password"},method = {RequestMethod.POST})
     public String resetPassword(String email,String verifyCode,String newPassword,
                                 Model model,HttpSession session) {
