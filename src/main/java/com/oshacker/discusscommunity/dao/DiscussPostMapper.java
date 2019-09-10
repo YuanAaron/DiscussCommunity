@@ -20,4 +20,7 @@ public interface DiscussPostMapper {
 
     DiscussPost selectDiscussPostById(int id);
 
+    int updateCommentCount(@Param("id") int id,
+                           @Param("commentCount") int commentCount);
+
 }

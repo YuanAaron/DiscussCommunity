@@ -44,4 +44,10 @@ public class DiscussPostService {
     public DiscussPost findDiscussPostById(int id) {
         return discussPostMapper.selectDiscussPostById(id);
     }
+
+    int updateCommentCount(int id,int commentCount) {
+        return discussPostMapper.updateCommentCount(id,commentCount);
+    }
+
+
 }
