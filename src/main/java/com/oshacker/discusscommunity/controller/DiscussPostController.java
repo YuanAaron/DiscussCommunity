@@ -1,9 +1,13 @@
 package com.oshacker.discusscommunity.controller;
 
+import com.oshacker.discusscommunity.entity.Comment;
 import com.oshacker.discusscommunity.entity.DiscussPost;
+import com.oshacker.discusscommunity.entity.Page;
 import com.oshacker.discusscommunity.entity.User;
+import com.oshacker.discusscommunity.service.CommentService;
 import com.oshacker.discusscommunity.service.DiscussPostService;
 import com.oshacker.discusscommunity.service.UserService;
+import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
 import com.oshacker.discusscommunity.utils.HostHolder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +18,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.Date;
+import javax.swing.text.html.parser.Entity;
+import java.util.*;
 
 @Controller
 @RequestMapping("/discuss")
-public class DiscussPostController {
+public class DiscussPostController implements DiscussCommunityConstant {
 
     @Autowired
     private DiscussPostService discussPostService;
@@ -29,12 +34,60 @@ public class DiscussPostController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private CommentService commentService;
+
     @RequestMapping(path="/detail/{discussPostId}",method = RequestMethod.GET)
-    public String getDiscussPost(@PathVariable("discussPostId") int id, Model model) {
+    public String getDiscussPost(@PathVariable("discussPostId") int id, Model model, Page page) {
         DiscussPost post = discussPostService.findDiscussPostById(id);
         model.addAttribute("post",post);
+
         User user = userService.findUserById(post.getUserId());
         model.addAttribute("user",user);
+
+        //评论相关：本项目中给帖子的评论叫评论，给评论的评论叫回复。
+
+        //评论分页信息
+        page.setLimit(5);
+        page.setRows(post.getCommentCount()); //评论数量
+        page.setPath("/discuss/detail/"+id);
+
+        //评论列表
+        List<Comment> commentList = commentService.findCommentsByEntity(ENTITY_TYPE_POST,
+                post.getId(), page.getOffset(), page.getLimit());
+        //评论VO列表
+        List<Map<String,Object>> commentVoList=new ArrayList<>();
+        if (commentVoList!=null) {
+            for (Comment comment: commentList) {
+                //评论VO
+                Map<String,Object> commentVo=new HashMap<>();
+                commentVo.put("comment",comment);
+                commentVo.put("user",userService.findUserById(comment.getUserId()));
+
+                //回复列表
+                List<Comment> replyList = commentService.findCommentsByEntity(ENTITY_TYPE_COMMENT,
+                        comment.getId(), 0, Integer.MAX_VALUE);
+                //回复VO列表
+                List<Map<String,Object>> replyVoList=new ArrayList<>();
+                if (replyVoList!=null) {
+                    for (Comment reply: replyList) {
+                        //回复VO
+                        Map<String,Object> replyVo=new HashMap<>();
+                        replyVo.put("reply",reply);
+                        replyVo.put("user",userService.findUserById(reply.getUserId()));
+                        replyVo.put("target",reply.getTargetId()==0?null:userService.findUserById(reply.getTargetId()));
+                        replyVoList.add(replyVo);
+                    }
+                }
+                commentVo.put("replys",replyVoList);
+                //回复数量
+                commentVo.put("replyCount",commentService.findCommentCount(ENTITY_TYPE_COMMENT,comment.getId()));
+
+                commentVoList.add(commentVo);
+            }
+            model.addAttribute("comments",commentVoList);
+        }
+
         return "/site/discuss-detail";
     }
 
