@@ -6,6 +6,7 @@ import com.oshacker.discusscommunity.entity.Page;
 import com.oshacker.discusscommunity.entity.User;
 import com.oshacker.discusscommunity.service.MessageService;
 import com.oshacker.discusscommunity.service.UserService;
+import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
 import com.oshacker.discusscommunity.utils.HostHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -13,11 +14,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 public class MessageController {
@@ -30,6 +29,34 @@ public class MessageController {
 
     @Autowired
     private UserService userService;
+
+    @RequestMapping(path="/letter/send",method = RequestMethod.POST)
+    @ResponseBody
+    public String sendLetter(String toName,String content) {
+        User user = hostHolder.getUser();
+        if (user==null) {
+            return DiscussCommunityUtil.getJSONString(403,"你还未登录哦!");
+        }
+        User target = userService.findUserByName(toName);
+        if (target==null) {
+            return DiscussCommunityUtil.getJSONString(1,"目标用户不存在!");
+        }
+
+        Message message=new Message();
+        message.setFromId(user.getId());
+        message.setToId(target.getId());
+        if (message.getFromId()<message.getToId()) {
+            message.setConversationId(message.getFromId()+"_"+message.getToId());
+        } else {
+            message.setConversationId(message.getToId()+"_"+message.getFromId());
+        }
+        message.setContent(content);
+        message.setCreateTime(new Date());
+        messageService.addMessage(message);
+
+        //报错的情况将来统一处理
+        return DiscussCommunityUtil.getJSONString(0);
+    }
 
     @RequestMapping(path="/letter/detail/{conversationId}",method = RequestMethod.GET)
     public String getLetterDetail(@PathVariable("conversationId") String conversationId,

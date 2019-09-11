@@ -37,6 +37,10 @@ public class UserService implements DiscussCommunityConstant {
     @Autowired
     private LoginTicketMapper loginTicketMapper;
 
+    public User findUserByName(String username) {
+        return userMapper.selectByName(username);
+    }
+
     public Map<String, Object> updatePassword(int userId, String oldPassword, String newPassword) {
         Map<String,Object> map=new HashMap<>();
         
