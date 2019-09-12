@@ -30,6 +30,13 @@ public class MessageController {
     @Autowired
     private UserService userService;
 
+    @RequestMapping(path="/letter/delete",method = RequestMethod.POST)
+    @ResponseBody
+    public String deleteLetter(int id) {
+        messageService.deleteMessage(id);
+        return DiscussCommunityUtil.getJSONString(0);
+    }
+
     @RequestMapping(path="/letter/send",method = RequestMethod.POST)
     @ResponseBody
     public String sendLetter(String toName,String content) {
