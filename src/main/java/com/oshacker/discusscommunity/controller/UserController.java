@@ -2,6 +2,7 @@ package com.oshacker.discusscommunity.controller;
 
 import com.oshacker.discusscommunity.annotation.LoginRequired;
 import com.oshacker.discusscommunity.entity.User;
+import com.oshacker.discusscommunity.service.LikeService;
 import com.oshacker.discusscommunity.service.UserService;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
 import com.oshacker.discusscommunity.utils.HostHolder;
@@ -44,6 +45,23 @@ public class UserController {
 
     @Autowired
     private HostHolder hostHolder;
+    
+    @Autowired
+    private LikeService likeService;
+
+    @RequestMapping(path="/profile/{userId}",method = RequestMethod.GET)
+    public String getProfilePage(@PathVariable("userId") int userId,Model model) {
+        User user = userService.findUserById(userId);
+        if (user==null) {
+            throw new RuntimeException("该用户不存在!");
+        }
+        
+        model.addAttribute("user",user);
+        //用户收到的赞
+        int likeCount = likeService.findUserLikeCount(userId);
+        model.addAttribute("likeCount",likeCount);
+        return "/site/profile";
+    }
 
     @RequestMapping(path = {"/updatePassword"}, method = RequestMethod.POST)
     public String updatePassword(String oldPassword,String newPassword,Model model) {
