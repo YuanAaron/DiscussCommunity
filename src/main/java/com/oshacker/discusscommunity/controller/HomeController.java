@@ -4,7 +4,9 @@ import com.oshacker.discusscommunity.entity.DiscussPost;
 import com.oshacker.discusscommunity.entity.Page;
 import com.oshacker.discusscommunity.entity.User;
 import com.oshacker.discusscommunity.service.DiscussPostService;
+import com.oshacker.discusscommunity.service.LikeService;
 import com.oshacker.discusscommunity.service.UserService;
+import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,13 +19,16 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-public class HomeController {
+public class HomeController implements DiscussCommunityConstant {
 
     @Autowired
     private DiscussPostService discussPostService;
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private LikeService likeService;
 
     @RequestMapping(path="/error",method = RequestMethod.GET)
     public String getErrorPage() {
@@ -45,6 +50,8 @@ public class HomeController {
                 map.put("post", post);
                 User user = userService.findUserById(post.getUserId());
                 map.put("user", user);
+                long likeCount=likeService.findEntityLikeCount(ENTITY_TYPE_POST,post.getId());
+                map.put("likeCount",likeCount);
                 discussPosts.add(map);
             }
         }
