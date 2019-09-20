@@ -2,8 +2,10 @@ package com.oshacker.discusscommunity.controller;
 
 import com.oshacker.discusscommunity.annotation.LoginRequired;
 import com.oshacker.discusscommunity.entity.User;
+import com.oshacker.discusscommunity.service.FollowService;
 import com.oshacker.discusscommunity.service.LikeService;
 import com.oshacker.discusscommunity.service.UserService;
+import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
 import com.oshacker.discusscommunity.utils.HostHolder;
 import org.apache.commons.lang3.StringUtils;
@@ -27,7 +29,7 @@ import java.util.Map;
 
 @Controller
 @RequestMapping("/user")
-public class UserController {
+public class UserController implements DiscussCommunityConstant {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -48,6 +50,9 @@ public class UserController {
     
     @Autowired
     private LikeService likeService;
+    
+    @Autowired
+    private FollowService followService;
 
     @RequestMapping(path="/profile/{userId}",method = RequestMethod.GET)
     public String getProfilePage(@PathVariable("userId") int userId,Model model) {
@@ -60,6 +65,17 @@ public class UserController {
         //用户收到的赞
         int likeCount = likeService.findUserLikeCount(userId);
         model.addAttribute("likeCount",likeCount);
+
+        //用户关注的数量
+        model.addAttribute("followeeCount",followService.findFolloweeCount(userId, ENTITY_TYPE_USER));
+        //用户的粉丝数量
+        model.addAttribute("followerCount",followService.findFollowerCount(ENTITY_TYPE_USER,userId));
+        //当前登录用户是否已关注该用户
+        boolean hasFollowed=false;
+        if (hostHolder.getUser()!=null) {
+            hasFollowed=followService.hasFollowed(hostHolder.getUser().getId(),ENTITY_TYPE_USER,userId);
+        }
+        model.addAttribute("hasFollowed",hasFollowed);
         return "/site/profile";
     }
 
