@@ -18,4 +18,10 @@ public interface CommentMapper {
                             @Param("entityId") int entityId);
 
     int insertComment(Comment comment);
+
+    List<Comment> selectCommentsByUser(@Param("userId") int userId,
+                                       @Param("offset") int offset,
+                                       @Param("limit") int limit);
+
+    int selectCountByUser(int userId);
 }
