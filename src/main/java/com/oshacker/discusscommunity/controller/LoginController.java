@@ -3,16 +3,14 @@ package com.oshacker.discusscommunity.controller;
 import com.google.code.kaptcha.Producer;
 import com.oshacker.discusscommunity.entity.User;
 import com.oshacker.discusscommunity.service.UserService;
-import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
-import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
-import com.oshacker.discusscommunity.utils.MailClient;
-import com.oshacker.discusscommunity.utils.RedisKeyUtil;
+import com.oshacker.discusscommunity.utils.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +19,7 @@ import org.thymeleaf.context.Context;
 
 import javax.imageio.ImageIO;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.awt.image.BufferedImage;
@@ -107,8 +106,10 @@ public class LoginController implements DiscussCommunityConstant {
     //方法二：从request对象中通过request.getParameter()获取
     @RequestMapping(path = {"/login"},method= RequestMethod.POST)
     public String login(String username, String password, String code, boolean rememberme,
-                        Model model,HttpServletResponse response, @CookieValue("kaptchaOwner") String kaptchaOwner) {
+                        Model model,HttpServletResponse response,
+                        HttpServletRequest request) {
         //先检查验证码
+        String kaptchaOwner= CookieUtil.getValue(request,"kaptchaOwner");
         String kaptcha=null;
         if (StringUtils.isNotBlank(kaptchaOwner)) {
             String kaptchakey = RedisKeyUtil.getKaptchakey(kaptchaOwner);
