@@ -4,6 +4,7 @@ import com.oshacker.discusscommunity.entity.LoginTicket;
 import org.apache.ibatis.annotations.*;
 
 @Mapper
+@Deprecated //不再推荐使用，转用Redis存储ticket
 public interface LoginTicketMapper {
 
     @Insert({
