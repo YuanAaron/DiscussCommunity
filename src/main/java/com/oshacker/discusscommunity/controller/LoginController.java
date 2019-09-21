@@ -6,11 +6,13 @@ import com.oshacker.discusscommunity.service.UserService;
 import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
 import com.oshacker.discusscommunity.utils.MailClient;
+import com.oshacker.discusscommunity.utils.RedisKeyUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +27,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 public class LoginController implements DiscussCommunityConstant {
@@ -45,6 +48,9 @@ public class LoginController implements DiscussCommunityConstant {
 
     @Autowired
     private MailClient mailClient;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     //重置密码
     @RequestMapping(path = {"/forget/password"},method = {RequestMethod.POST})
@@ -101,9 +107,15 @@ public class LoginController implements DiscussCommunityConstant {
     //方法二：从request对象中通过request.getParameter()获取
     @RequestMapping(path = {"/login"},method= RequestMethod.POST)
     public String login(String username, String password, String code, boolean rememberme,
-                        Model model, HttpSession session, HttpServletResponse response) {
+                        Model model,HttpServletResponse response, @CookieValue("kaptchaOwner") String kaptchaOwner) {
         //先检查验证码
-        String kaptcha = (String) session.getAttribute("kaptcha");
+        String kaptcha=null;
+        if (StringUtils.isNotBlank(kaptchaOwner)) {
+            String kaptchakey = RedisKeyUtil.getKaptchakey(kaptchaOwner);
+            kaptcha=(String)redisTemplate.opsForValue().get(kaptchakey);
+
+        }
+
         if (StringUtils.isBlank(kaptcha) || StringUtils.isBlank(code) || !kaptcha.equalsIgnoreCase(code)) {
             model.addAttribute("codeMsg","验证码不正确!");
             return "/site/login";
@@ -128,13 +140,21 @@ public class LoginController implements DiscussCommunityConstant {
 
     //生成验证码
     @RequestMapping(path = "/kaptcha", method = RequestMethod.GET)
-    public void getKaptcha(HttpServletResponse response, HttpSession session) {
+    public void getKaptcha(HttpServletResponse response/*, HttpSession session*/) {
         // 生成验证码
         String text = kaptchaProducer.createText();
         BufferedImage image = kaptchaProducer.createImage(text);
 
-        // 将验证码存入session用于登录
-        session.setAttribute("kaptcha", text);
+        // 将验证码存入Redis用于登录
+        //验证码的归属: kaptcharOwner是用户获取login.html页面时随机生成的，60s后就过期。
+        String kaptchaOwner = DiscussCommunityUtil.generateUUID();
+        Cookie cookie=new Cookie("kaptchaOwner",kaptchaOwner);
+        cookie.setMaxAge(60);
+        cookie.setPath(contextPath);
+        response.addCookie(cookie);
+
+        String kaptchakey = RedisKeyUtil.getKaptchakey(kaptchaOwner);
+        redisTemplate.opsForValue().set(kaptchakey,text,60, TimeUnit.SECONDS);
 
         // 将图片输出给浏览器
         response.setContentType("image/png");
