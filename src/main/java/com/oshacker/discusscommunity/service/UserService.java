@@ -17,6 +17,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserService implements DiscussCommunityConstant {
@@ -38,6 +39,27 @@ public class UserService implements DiscussCommunityConstant {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    //关于缓存
+    //1、先不去访问MySQL,而是优先从缓存中取值
+    private User getCache(int userId) {
+        String userKey = RedisKeyUtil.getUserKey(userId);
+        return (User) redisTemplate.opsForValue().get(userKey);
+    }
+
+    //2、如果从缓存中取到了就直接用，如果取不到就初始化缓存数据
+    private User initCache(int userId) {
+        User user = userMapper.selectById(userId);
+        String userKey = RedisKeyUtil.getUserKey(userId);
+        redisTemplate.opsForValue().set(userKey,user,3600, TimeUnit.SECONDS);
+        return user;
+    }
+
+    //3、用户数据变更时（比如修改头像，密码等）更新缓存（具体做法是清除缓存数据）
+    private void clearCache(int userId) {
+        String userKey = RedisKeyUtil.getUserKey(userId);
+        redisTemplate.delete(userKey);
+    }
 
     public User findUserByName(String username) {
         return userMapper.selectByName(username);
@@ -66,6 +88,7 @@ public class UserService implements DiscussCommunityConstant {
 
         newPassword=DiscussCommunityUtil.md5(newPassword+user.getSalt());
         userMapper.updatePassword(userId,newPassword);
+        clearCache(userId);
         return map;
     }
 
@@ -93,13 +116,16 @@ public class UserService implements DiscussCommunityConstant {
         //重置密码
         newPassword=DiscussCommunityUtil.md5(newPassword+user.getSalt());
         userMapper.updatePassword(user.getId(),newPassword);
+        clearCache(user.getId());
 
         map.put("user",user);
         return map;
     }
 
     public int updateHeader(int userId, String headerUrl) {
-        return userMapper.updateHeader(userId, headerUrl);
+        int rows=userMapper.updateHeader(userId, headerUrl);
+        clearCache(userId);
+        return rows;
     }
 
     public LoginTicket findLoginTicket(String ticket) {
@@ -170,6 +196,7 @@ public class UserService implements DiscussCommunityConstant {
             return ACTIVATION_REPEAT;
         } else if (user.getActivationCode().equals(code)) {
             userMapper.updateStatus(userId, 1);
+            clearCache(userId);
             return ACTIVATION_SUCCESS;
         } else {
             return ACTIVATION_FAILURE;
@@ -236,6 +263,10 @@ public class UserService implements DiscussCommunityConstant {
     }
 
     public User findUserById(int id) {
-        return userMapper.selectById(id);
+        User user = getCache(id);
+        if (user==null) {
+            user = initCache(id);
+        }
+        return user;
     }
 }
