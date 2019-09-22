@@ -24,4 +24,6 @@ public interface CommentMapper {
                                        @Param("limit") int limit);
 
     int selectCountByUser(int userId);
+
+    Comment selectCommentById(int id);
 }

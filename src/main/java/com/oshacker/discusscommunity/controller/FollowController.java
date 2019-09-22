@@ -1,7 +1,9 @@
 package com.oshacker.discusscommunity.controller;
 
+import com.oshacker.discusscommunity.entity.Event;
 import com.oshacker.discusscommunity.entity.Page;
 import com.oshacker.discusscommunity.entity.User;
+import com.oshacker.discusscommunity.event.EventProducer;
 import com.oshacker.discusscommunity.service.FollowService;
 import com.oshacker.discusscommunity.service.UserService;
 import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
@@ -30,6 +32,9 @@ public class FollowController implements DiscussCommunityConstant {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private EventProducer eventProducer;
 
     @RequestMapping(path="/followers/{userId}",method = RequestMethod.GET)
     public String getFollowers(@PathVariable("userId") int userId, Page page, Model model) {
@@ -104,6 +109,12 @@ public class FollowController implements DiscussCommunityConstant {
         }
 
         followService.follow(user.getId(),entityType,entityId);
+
+        //触发关注事件
+        Event event=new Event().setTopic(TOPIC_FOLLOW).setUserId(user.getId())
+                .setEntityType(entityType).setEntityId(entityId).setEntityUserId(entityId);
+        eventProducer.fireEvent(event);
+
         return DiscussCommunityUtil.getJSONString(0,"已关注!");
     }
     

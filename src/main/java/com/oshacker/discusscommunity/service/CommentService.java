@@ -64,4 +64,8 @@ public class CommentService implements DiscussCommunityConstant {
         return commentMapper.selectCountByUser(userId);
     }
 
+    public Comment findCommentById(int id) {
+        return commentMapper.selectCommentById(id);
+    }
+
 }

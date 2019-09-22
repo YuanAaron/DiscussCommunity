@@ -1,8 +1,14 @@
 package com.oshacker.discusscommunity.controller;
 
 import com.oshacker.discusscommunity.entity.Comment;
+import com.oshacker.discusscommunity.entity.DiscussPost;
+import com.oshacker.discusscommunity.entity.Event;
+import com.oshacker.discusscommunity.event.EventProducer;
 import com.oshacker.discusscommunity.service.CommentService;
+import com.oshacker.discusscommunity.service.DiscussPostService;
+import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.HostHolder;
+import org.apache.kafka.common.internals.Topic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,13 +19,19 @@ import java.util.Date;
 
 @Controller
 @RequestMapping("/comment")
-public class CommentController {
+public class CommentController implements DiscussCommunityConstant {
 
     @Autowired
     private HostHolder hostHolder;
 
     @Autowired
     private CommentService commentService;
+
+    @Autowired
+    private EventProducer eventProducer;
+
+    @Autowired
+    private DiscussPostService discussPostService;
 
     @RequestMapping(path = "/add/{discussPostId}", method = RequestMethod.POST)
     public String addComment(@PathVariable("discussPostId") int discussPostId, Comment comment) {
@@ -33,6 +45,20 @@ public class CommentController {
         comment.setStatus(0);
         comment.setCreateTime(new Date());
         commentService.addComment(comment);
+
+        //触发评论事件
+        Event event=new Event().setTopic(TOPIC_COMMENT).setUserId(hostHolder.getUser().getId())
+                .setEntityType(comment.getEntityType()).setEntityId(comment.getEntityId())
+                .setData("postId",discussPostId);
+        if (comment.getEntityType()==ENTITY_TYPE_POST) {
+            DiscussPost discussPost = discussPostService.findDiscussPostById(comment.getEntityId());
+            event.setEntityUserId(discussPost.getUserId());
+        } else if (comment.getEntityType()==ENTITY_TYPE_COMMENT) {
+            Comment target = commentService.findCommentById(comment.getEntityId());
+            event.setEntityUserId(target.getUserId());
+        }
+        eventProducer.fireEvent(event);
+
         return "redirect:/discuss/detail/" + discussPostId;
     }
 }
