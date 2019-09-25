@@ -1,9 +1,7 @@
 package com.oshacker.discusscommunity.controller;
 
-import com.oshacker.discusscommunity.entity.Comment;
-import com.oshacker.discusscommunity.entity.DiscussPost;
-import com.oshacker.discusscommunity.entity.Page;
-import com.oshacker.discusscommunity.entity.User;
+import com.oshacker.discusscommunity.entity.*;
+import com.oshacker.discusscommunity.event.EventProducer;
 import com.oshacker.discusscommunity.service.CommentService;
 import com.oshacker.discusscommunity.service.DiscussPostService;
 import com.oshacker.discusscommunity.service.LikeService;
@@ -39,6 +37,9 @@ public class DiscussPostController implements DiscussCommunityConstant {
 
     @Autowired
     private LikeService likeService;
+
+    @Autowired
+    private EventProducer eventProducer;
 
     @RequestMapping(path="/detail/{discussPostId}",method = RequestMethod.GET)
     public String getDiscussPost(@PathVariable("discussPostId") int id, Model model, Page page) {
@@ -127,6 +128,11 @@ public class DiscussPostController implements DiscussCommunityConstant {
         post.setContent(content);
         post.setCreateTime(new Date());
         discussPostService.addDiscussPost(post);
+
+        //触发发帖事件
+        Event event=new Event().setTopic(TOPIC_PUBLISH).setUserId(user.getId())
+                .setEntityType(ENTITY_TYPE_POST).setEntityId(post.getId());
+        eventProducer.fireEvent(event);
 
         //报错的情况将来统一处理
         return DiscussCommunityUtil.getJSONString(0,"发布成功");

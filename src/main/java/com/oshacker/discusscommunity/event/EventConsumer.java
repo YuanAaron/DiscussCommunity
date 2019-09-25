@@ -1,8 +1,11 @@
 package com.oshacker.discusscommunity.event;
 
 import com.alibaba.fastjson.JSONObject;
+import com.oshacker.discusscommunity.entity.DiscussPost;
 import com.oshacker.discusscommunity.entity.Event;
 import com.oshacker.discusscommunity.entity.Message;
+import com.oshacker.discusscommunity.service.DiscussPostService;
+import com.oshacker.discusscommunity.service.ElasticsearchService;
 import com.oshacker.discusscommunity.service.MessageService;
 import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -24,6 +27,12 @@ public class EventConsumer implements DiscussCommunityConstant {
 
     @Autowired
     private MessageService messageService;
+
+    @Autowired
+    private DiscussPostService discussPostService;
+
+    @Autowired
+    private ElasticsearchService elasticsearchService;
 
     @KafkaListener(topics = {TOPIC_COMMENT,TOPIC_LIKE,TOPIC_FOLLOW})
     public void handleMessage(ConsumerRecord record) {
@@ -56,5 +65,22 @@ public class EventConsumer implements DiscussCommunityConstant {
         }
         message.setContent(JSONObject.toJSONString(content));
         messageService.addMessage(message);
+    }
+
+    @KafkaListener(topics = {TOPIC_PUBLISH})
+    public void handlePublishMessage(ConsumerRecord record) {
+        if (record==null || record.value()==null) {
+            logger.error("消息的内容为空!");
+            return;
+        }
+
+        Event event = JSONObject.parseObject(record.value().toString(), Event.class);
+        if (event==null) {
+            logger.error("消息的格式错误!");
+            return;
+        }
+
+        DiscussPost discussPost=discussPostService.findDiscussPostById(event.getEntityId());
+        elasticsearchService.saveDiscussPost(discussPost);
     }
 }
