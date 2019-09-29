@@ -6,11 +6,11 @@ function publish() {
 	$("#publishModal").modal("hide");
 
 	//在发送AJAX请求之前，将CSRF令牌设置到请求的消息头中
-	var token=$("meta[name='_csrf']").attr("content");
-	var name=$("meta[name='_csrf_name']").attr("content");
-	$(document).ajaxSend(function(e,xhr,options) {
-		xhr.setRequestHeader(name,token);
-	});
+	// var token=$("meta[name='_csrf']").attr("content");
+	// var name=$("meta[name='_csrf_name']").attr("content");
+	// $(document).ajaxSend(function(e,xhr,options) {
+	// 	xhr.setRequestHeader(name,token);
+	// });
 
 	//获取标题、内容
 	var title=$("#recipient-name").val();

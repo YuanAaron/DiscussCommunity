@@ -32,7 +32,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter implements Disc
 
     //但是这里我们用的是自己的认证方案，而没有用Security框架，也就没有UsernamePasswordAuthenticationToken，
     //因此Security框架无法帮你做授权，因为它不知道你的权限是什么。因此我们需要自己将认证的结论存储到SecurityContext中。
-    
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         // 授权配置
@@ -50,7 +50,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter implements Disc
                         "/unfollow"
                 ).hasAnyAuthority(AUTHORITY_USER,AUTHORITY_MODERATOR,AUTHORITY_ADMIN)
                 //不登录可以访问
-                .anyRequest().permitAll();
+                .anyRequest().permitAll()
+                //禁用防止csrf攻击的检查
+                .and().csrf().disable();
 
         //权限不够时的处理
         http.exceptionHandling()
