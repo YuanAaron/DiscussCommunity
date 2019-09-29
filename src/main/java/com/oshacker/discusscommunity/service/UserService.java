@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -39,6 +40,31 @@ public class UserService implements DiscussCommunityConstant {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    //获取某个用户的权限
+    //关键：在什么时候获得用户的权限，并将与用户权限相关的Token存到SecurityContext中？
+    public Collection<? extends GrantedAuthority> getAuthorities(int userId) {
+        User user = userMapper.selectById(userId);
+        if (user==null) {
+            throw new RuntimeException("该用户不存在!");
+        }
+
+        List<GrantedAuthority> list = new ArrayList<>();
+        list.add(new GrantedAuthority() {
+            @Override
+            public String getAuthority() {
+                switch (user.getType()) {
+                    case 1:
+                        return AUTHORITY_ADMIN;
+                    case 2:
+                        return AUTHORITY_MODERATOR;
+                    default:
+                        return AUTHORITY_USER;
+                }
+            }
+        });
+        return list;
+    }
 
     //关于缓存
     //1、先不去访问MySQL,而是优先从缓存中取值

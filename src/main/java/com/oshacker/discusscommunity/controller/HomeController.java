@@ -30,6 +30,12 @@ public class HomeController implements DiscussCommunityConstant {
     @Autowired
     private LikeService likeService;
 
+    //拒绝访问时的提示页面
+    @RequestMapping(path="/denied",method = RequestMethod.GET)
+    public String getDeniedPage() {
+        return "error/404";
+    }
+
     @RequestMapping(path="/error",method = RequestMethod.GET)
     public String getErrorPage() {
         return "/error/500";
