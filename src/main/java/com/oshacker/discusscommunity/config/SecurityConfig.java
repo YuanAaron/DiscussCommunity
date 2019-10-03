@@ -49,6 +49,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter implements Disc
                         "/follow",
                         "/unfollow"
                 ).hasAnyAuthority(AUTHORITY_USER,AUTHORITY_MODERATOR,AUTHORITY_ADMIN)
+                .antMatchers(
+                        "/discuss/top",
+                        "/discuss/wonderful"
+                ).hasAnyAuthority(AUTHORITY_MODERATOR)
+                .antMatchers(
+                        "/discuss/delete"
+                ).hasAnyAuthority(AUTHORITY_ADMIN)
                 //不登录可以访问
                 .anyRequest().permitAll()
                 //禁用防止csrf攻击的检查

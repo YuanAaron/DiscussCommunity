@@ -41,6 +41,66 @@ public class DiscussPostController implements DiscussCommunityConstant {
     @Autowired
     private EventProducer eventProducer;
 
+    //删帖
+    @RequestMapping(path = "/delete",method = RequestMethod.POST)
+    @ResponseBody
+    public String setDelete(int id) {
+        User user = hostHolder.getUser();
+        //因为使用了Spring Security进行权限控制，这里可以省略
+//        if (user==null) {
+//            return DiscussCommunityUtil.getJSONString(403,"你还未登录哦!");
+//        }
+
+        discussPostService.updateStatus(id,2);
+
+        //触发删帖事件(同步到elasticsearch中)
+        Event event=new Event().setTopic(TOPIC_DELETE).setUserId(user.getId())
+                .setEntityType(ENTITY_TYPE_POST).setEntityId(id);
+        eventProducer.fireEvent(event);
+
+        return DiscussCommunityUtil.getJSONString(0);
+    }
+
+    //加精
+    @RequestMapping(path = "/wonderful",method = RequestMethod.POST)
+    @ResponseBody
+    public String setWonderful(int id) {
+        User user = hostHolder.getUser();
+        //因为使用了Spring Security进行权限控制，这里可以省略
+//        if (user==null) {
+//            return DiscussCommunityUtil.getJSONString(403,"你还未登录哦!");
+//        }
+
+        discussPostService.updateStatus(id,1);
+
+        //触发发帖事件(同步到elasticsearch中)
+        Event event=new Event().setTopic(TOPIC_PUBLISH).setUserId(user.getId())
+                .setEntityType(ENTITY_TYPE_POST).setEntityId(id);
+        eventProducer.fireEvent(event);
+
+        return DiscussCommunityUtil.getJSONString(0);
+    }
+
+    //置顶
+    @RequestMapping(path = "/top",method = RequestMethod.POST)
+    @ResponseBody
+    public String setTop(int id) {
+        User user = hostHolder.getUser();
+        //因为使用了Spring Security进行权限控制，这里可以省略
+//        if (user==null) {
+//            return DiscussCommunityUtil.getJSONString(403,"你还未登录哦!");
+//        }
+
+        discussPostService.updateType(id,1);
+
+        //触发发帖事件(同步到elasticsearch中)
+        Event event=new Event().setTopic(TOPIC_PUBLISH).setUserId(user.getId())
+                .setEntityType(ENTITY_TYPE_POST).setEntityId(id);
+        eventProducer.fireEvent(event);
+
+        return DiscussCommunityUtil.getJSONString(0);
+    }
+
     @RequestMapping(path="/detail/{discussPostId}",method = RequestMethod.GET)
     public String getDiscussPost(@PathVariable("discussPostId") int id, Model model, Page page) {
         DiscussPost post = discussPostService.findDiscussPostById(id);
