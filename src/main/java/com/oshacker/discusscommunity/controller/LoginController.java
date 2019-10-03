@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -98,6 +99,7 @@ public class LoginController implements DiscussCommunityConstant {
     @RequestMapping(path = {"/logout"},method= RequestMethod.GET)
     public String login(@CookieValue("ticket") String ticket) {
         userService.logout(ticket);
+        SecurityContextHolder.clearContext(); //没有该句，登录用户退出后，权限控制存在bug，原因还没有想明白
         return "redirect:/login"; //默认重定向到GET请求的/login
     }
 
