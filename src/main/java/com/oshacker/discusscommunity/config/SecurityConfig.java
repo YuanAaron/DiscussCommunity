@@ -54,7 +54,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter implements Disc
                         "/discuss/wonderful"
                 ).hasAnyAuthority(AUTHORITY_MODERATOR)
                 .antMatchers(
-                        "/discuss/delete"
+                        "/discuss/delete",
+                        "/data/**"
                 ).hasAnyAuthority(AUTHORITY_ADMIN)
                 //不登录可以访问
                 .anyRequest().permitAll()
