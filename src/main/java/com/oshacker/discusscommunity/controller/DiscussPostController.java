@@ -9,7 +9,9 @@ import com.oshacker.discusscommunity.service.UserService;
 import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
 import com.oshacker.discusscommunity.utils.HostHolder;
+import com.oshacker.discusscommunity.utils.RedisKeyUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,6 +42,9 @@ public class DiscussPostController implements DiscussCommunityConstant {
 
     @Autowired
     private EventProducer eventProducer;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     //删帖
     @RequestMapping(path = "/delete",method = RequestMethod.POST)
@@ -77,6 +82,10 @@ public class DiscussPostController implements DiscussCommunityConstant {
         Event event=new Event().setTopic(TOPIC_PUBLISH).setUserId(user.getId())
                 .setEntityType(ENTITY_TYPE_POST).setEntityId(id);
         eventProducer.fireEvent(event);
+
+        //加精时将帖子id放到Redis中，以便计算帖子分数
+        String postScoreKey = RedisKeyUtil.getPostScoreKey();
+        redisTemplate.opsForSet().add(postScoreKey,id);
 
         return DiscussCommunityUtil.getJSONString(0);
     }
@@ -193,6 +202,10 @@ public class DiscussPostController implements DiscussCommunityConstant {
         Event event=new Event().setTopic(TOPIC_PUBLISH).setUserId(user.getId())
                 .setEntityType(ENTITY_TYPE_POST).setEntityId(post.getId());
         eventProducer.fireEvent(event);
+
+        //发布帖子时将帖子id放到Redis中，以便计算帖子分数
+        String postScoreKey = RedisKeyUtil.getPostScoreKey();
+        redisTemplate.opsForSet().add(postScoreKey,post.getId());
 
         //报错的情况将来统一处理
         return DiscussCommunityUtil.getJSONString(0,"发布成功");

@@ -12,7 +12,8 @@ public interface DiscussPostMapper {
     //userId==0表示所有帖子，userId!=0表示某个用户发布的帖子
     List<DiscussPost> selectDiscussPosts(@Param("userId") int userId,
                                          @Param("offset") int offset,
-                                         @Param("limit") int limit);
+                                         @Param("limit") int limit,
+                                         @Param("orderMode") int orderMode);
 
     int selectDiscussPostRows(int userId);
 
@@ -26,5 +27,7 @@ public interface DiscussPostMapper {
     int updateType(@Param("id") int id,@Param("type") int type);
 
     int updateStatus(@Param("id") int id,@Param("status") int status);
+
+    int updateScore(@Param("id") int id,@Param("score") double score);
 
 }

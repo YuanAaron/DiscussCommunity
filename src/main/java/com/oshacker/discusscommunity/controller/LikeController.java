@@ -10,7 +10,9 @@ import com.oshacker.discusscommunity.service.LikeService;
 import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
 import com.oshacker.discusscommunity.utils.HostHolder;
+import com.oshacker.discusscommunity.utils.RedisKeyUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -30,6 +32,9 @@ public class LikeController implements DiscussCommunityConstant {
 
     @Autowired
     private EventProducer eventProducer;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @RequestMapping(path = "/like",method = RequestMethod.POST)
     @ResponseBody
@@ -55,6 +60,12 @@ public class LikeController implements DiscussCommunityConstant {
                     .setEntityType(entityType).setEntityId(entityId).setEntityUserId(entityUserId)
                     .setData("postId",postId);
             eventProducer.fireEvent(event);
+        }
+
+        if (entityType==ENTITY_TYPE_POST) {
+            //对帖子点赞时，将帖子id放到Redis中，以便计算帖子分数
+            String postScoreKey = RedisKeyUtil.getPostScoreKey();
+            redisTemplate.opsForSet().add(postScoreKey,postId);
         }
 
         return DiscussCommunityUtil.getJSONString(0,null,map);

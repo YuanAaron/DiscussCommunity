@@ -8,8 +8,10 @@ import com.oshacker.discusscommunity.service.CommentService;
 import com.oshacker.discusscommunity.service.DiscussPostService;
 import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.HostHolder;
+import com.oshacker.discusscommunity.utils.RedisKeyUtil;
 import org.apache.kafka.common.internals.Topic;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +34,9 @@ public class CommentController implements DiscussCommunityConstant {
 
     @Autowired
     private DiscussPostService discussPostService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @RequestMapping(path = "/add/{discussPostId}", method = RequestMethod.POST)
     public String addComment(@PathVariable("discussPostId") int discussPostId, Comment comment) {
@@ -64,6 +69,10 @@ public class CommentController implements DiscussCommunityConstant {
             event=new Event().setTopic(TOPIC_PUBLISH).setUserId(comment.getUserId())
                     .setEntityType(ENTITY_TYPE_POST).setEntityId(discussPostId);
             eventProducer.fireEvent(event);
+
+            //评论帖子时将帖子id放到Redis中，以便计算帖子分数
+            String postScoreKey = RedisKeyUtil.getPostScoreKey();
+            redisTemplate.opsForSet().add(postScoreKey,discussPostId);
         }
 
         return "redirect:/discuss/detail/" + discussPostId;
