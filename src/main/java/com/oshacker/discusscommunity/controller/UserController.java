@@ -9,6 +9,8 @@ import com.oshacker.discusscommunity.service.*;
 import com.oshacker.discusscommunity.utils.DiscussCommunityConstant;
 import com.oshacker.discusscommunity.utils.DiscussCommunityUtil;
 import com.oshacker.discusscommunity.utils.HostHolder;
+import com.qiniu.util.Auth;
+import com.qiniu.util.StringMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,10 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -64,6 +63,18 @@ public class UserController implements DiscussCommunityConstant {
 
     @Autowired
     private CommentService commentService;
+
+    @Value("${qiniu.key.access}")
+    private String accessKey;
+
+    @Value("${qiniu.key.secret}")
+    private String secretKey;
+
+    @Value("${qiniu.bucket.header.name}")
+    private String headerBucketName;
+
+    @Value("${qiniu.bucket.header.url}")
+    private String headerBucketUrl;
 
     @RequestMapping(path="/myreply/{userId}",method = RequestMethod.GET)
     public String getMyReply(@PathVariable("userId") int userId, Page page,Model model) {
@@ -157,6 +168,7 @@ public class UserController implements DiscussCommunityConstant {
         return "/site/setting";
     }
 
+    //将header上传到云服务器，因此该方法废弃
     @RequestMapping(path = "/header/{fileName}", method = RequestMethod.GET)
     public void getHeader(@PathVariable("fileName") String fileName, HttpServletResponse response) {
         // 服务器存放路径
@@ -179,6 +191,7 @@ public class UserController implements DiscussCommunityConstant {
         }
     }
 
+    //将header上传到云服务器，因此该方法废弃
     @LoginRequired
     //当传入多张图片时，使用MultipartFile[]
     @RequestMapping(path = "/upload", method = RequestMethod.POST)
@@ -216,9 +229,35 @@ public class UserController implements DiscussCommunityConstant {
         return "redirect:/index";
     }
 
+    //更新数据库中头像的路径
+    @RequestMapping(path = "/header/url",method = RequestMethod.POST)
+    @ResponseBody
+    public String updateHeaderUrl(String fileName) {
+        if (StringUtils.isBlank(fileName)) {
+            return DiscussCommunityUtil.getJSONString(1,"文件名不能为空!");
+        }
+
+        String url=headerBucketUrl+"/"+fileName;
+        userService.updateHeader(hostHolder.getUser().getId(),url);
+        return DiscussCommunityUtil.getJSONString(0);
+    }
+
     @LoginRequired
     @RequestMapping(path = "/setting", method = RequestMethod.GET)
-    public String getSettingPage() {
+    public String getSettingPage(Model model) {
+        //生成上传凭证
+
+        //1.上传文件名称
+        String fileName=DiscussCommunityUtil.generateUUID();
+        //2、设置响应信息
+        StringMap policy=new StringMap();
+        policy.put("returnBody",DiscussCommunityUtil.getJSONString(0));
+        //3、生成上传凭证
+        Auth auth=Auth.create(accessKey,secretKey);
+        String uploadToken = auth.uploadToken(headerBucketName, fileName, 3600, policy);//1h内有效
+
+        model.addAttribute("uploadToken",uploadToken);
+        model.addAttribute("fileName",fileName);
         return "/site/setting";
     }
 
