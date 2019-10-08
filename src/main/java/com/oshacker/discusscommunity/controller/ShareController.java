@@ -40,6 +40,10 @@ public class ShareController implements DiscussCommunityConstant {
     @Autowired
     private EventProducer eventProducer;
 
+    @Value("${qiniu.bucket.share.url}")
+    private String shareBucketUrl;
+
+    //将share长图上传到七牛云，因此该方法废弃
     //获取长图:localhost:8080/community/share/image/f3a656b95744495899c2d2274e1b2df6
     @RequestMapping(path="/share/image/{fileName}",method = RequestMethod.GET)
     public void getShareImage(@PathVariable("fileName") String fileName, HttpServletResponse response) {
@@ -78,7 +82,8 @@ public class ShareController implements DiscussCommunityConstant {
         eventProducer.fireEvent(event);
 
         Map<String,Object> map=new HashMap<>();
-        map.put("shareUrl",domain+contextPath+"/share/image/"+fileName);
+//        map.put("shareUrl",domain+contextPath+"/share/image/"+fileName);
+        map.put("shareUrl",shareBucketUrl+"/"+fileName);
         return DiscussCommunityUtil.getJSONString(0,null,map);
     }
 }
