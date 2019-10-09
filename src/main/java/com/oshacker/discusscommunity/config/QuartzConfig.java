@@ -2,6 +2,7 @@ package com.oshacker.discusscommunity.config;
 
 import com.oshacker.discusscommunity.quartz.AlphaJob;
 import com.oshacker.discusscommunity.quartz.PostScoreRefreshJob;
+import com.oshacker.discusscommunity.quartz.WkImageDeleteJob;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.springframework.context.annotation.Bean;
@@ -61,6 +62,30 @@ public class QuartzConfig {
         factoryBean.setName("PostScoreRefreshTrigger");
         factoryBean.setGroup("discussCommunityTriggerGroup");
         factoryBean.setRepeatInterval(1000*60*5); //5min
+        factoryBean.setJobDataMap(new JobDataMap()); //用某个对象存储Job的状态
+        return factoryBean;
+    }
+
+    //删除1min之前分享功能创建的临时文件的任务
+    @Bean
+    public JobDetailFactoryBean wkImageDeleteJobDetail() {
+        JobDetailFactoryBean factoryBean=new JobDetailFactoryBean();
+        factoryBean.setJobClass(WkImageDeleteJob.class);
+        factoryBean.setName("wkImageDeleteJob");
+        factoryBean.setGroup("discussCommunityJobGroup");
+        factoryBean.setDurability(true); //任务长久保存
+        factoryBean.setRequestsRecovery(true); //任务是否可以被恢复
+        return factoryBean;
+    }
+
+    //配置Trigger
+    @Bean
+    public SimpleTriggerFactoryBean wkImageDeleteTrigger(JobDetail wkImageDeleteJobDetail) {
+        SimpleTriggerFactoryBean factoryBean=new SimpleTriggerFactoryBean();
+        factoryBean.setJobDetail(wkImageDeleteJobDetail); //这个触发器对应哪个Job
+        factoryBean.setName("wkImageDeleteTrigger");
+        factoryBean.setGroup("discussCommunityTriggerGroup");
+        factoryBean.setRepeatInterval(1000*60*4); //4min
         factoryBean.setJobDataMap(new JobDataMap()); //用某个对象存储Job的状态
         return factoryBean;
     }
