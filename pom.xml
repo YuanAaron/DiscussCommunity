@@ -12,6 +12,8 @@
 	<groupId>com.oshacker.discusscommunity</groupId>
 	<artifactId>discusscommunity</artifactId>
 	<version>1.0</version>
+	<!--for produce environment-->
+	<packaging>war</packaging>
 
 	<properties>
 		<java.version>1.8</java.version>
@@ -115,6 +117,8 @@
 	</dependencies>
 
 	<build>
+		<!--for produce environment: final packing name-->
+		<finalName>ROOT</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

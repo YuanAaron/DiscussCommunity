@@ -43,7 +43,7 @@ public class HomeController implements DiscussCommunityConstant {
         return "/error/500";
     }
 
-    @RequestMapping(path = "/index", method = RequestMethod.GET)
+    @RequestMapping(path = {"/","/index"}, method = RequestMethod.GET)
     public String getIndexPage(Model model, Page page,
                                @RequestParam(value = "orderMode",defaultValue = "0") int orderMode) {
         // 方法调用前，SpringMVC的DispatcherServlet会自动实例化Model和Page,

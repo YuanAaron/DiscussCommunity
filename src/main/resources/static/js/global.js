@@ -1,4 +1,5 @@
-var CONTEXT_PATH="/community";
+//for produce environment
+var CONTEXT_PATH=""; //原本为/community
 
 window.alert = function(message) {
 	if(!$(".alert-box").length) {
