@@ -43,6 +43,13 @@ public class HomeController implements DiscussCommunityConstant {
         return "/error/500";
     }
 
+    //for produce environment：老师的做法
+//    @RequestMapping(path = "/", method = RequestMethod.GET)
+//    public String root() {
+//        return "forward:/index";
+//    }
+
+    //for produce environment :我的做法
     @RequestMapping(path = {"/","/index"}, method = RequestMethod.GET)
     public String getIndexPage(Model model, Page page,
                                @RequestParam(value = "orderMode",defaultValue = "0") int orderMode) {
